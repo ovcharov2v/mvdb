@@ -1,8 +1,8 @@
-import React from "react";
+import {Component} from "react";
 import { Modal, ModalBody } from "reactstrap";
 import LoginForm from "./LoginForm";
 
-class Login extends React.Component {
+class Login extends Component {
   constructor() {
     super();
     this.state = {

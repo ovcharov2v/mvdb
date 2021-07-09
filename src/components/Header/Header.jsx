@@ -1,17 +1,21 @@
-import React from "react";
+import {Component} from "react";
 import Login from "./Login/Login";
+import User from "./User";
 
-class Header extends React.Component {
+class Header extends Component {
   render() {
+    const { user } = this.props;
     return (
       <nav className="navbar navbar-dark bg-primary">
         <div className="container">
           <ul className="navbar-nav">
             <li className="nav-item active">
-              <a className="nav-link">Home</a>
+              <a href="/" className="nav-link">
+                Home
+              </a>
             </li>
           </ul>
-          <Login />
+          {user ? <User /> : <Login />}
         </div>
       </nav>
     );

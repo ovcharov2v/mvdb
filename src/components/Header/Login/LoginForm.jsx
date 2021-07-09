@@ -1,7 +1,9 @@
-import React from "react";
-import { API_URL, API_KEY_3 } from "../../../api/api";
+import { Component } from "react";
+import { API_URL, API_KEY_3, fetchApi } from "../../../api/api";
+import { AppContext } from "../../../App";
+import classNames from "classnames";
 
-export default class LoginForm extends React.Component {
+class LoginForm extends Component {
 	state = {
 		username: "",
 		password: "",
@@ -16,13 +18,14 @@ export default class LoginForm extends React.Component {
 			[name]: value,
 			errors: {
 				...prevState.errors,
+				base: null,
 				[name]: null,
 			},
 		}));
 	};
 
 	handleBlur = () => {
-		console.log("on blur");
+		//console.log("on blur");
 		const errors = this.validateFields();
 		if (Object.keys(errors).length > 0) {
 			this.setState((prevState) => ({
@@ -45,26 +48,6 @@ export default class LoginForm extends React.Component {
 	};
 
 	onSubmit = () => {
-		const fetchApi = (url, options = {}) => {
-			return new Promise((resolve, reject) => {
-				fetch(url, options)
-					.then((response) => {
-						if (response.status < 400) {
-							return response.json();
-						} else {
-							throw response;
-						}
-					})
-					.then((data) => {
-						resolve(data);
-					})
-					.catch((response) => {
-						response.json().then((error) => {
-							reject(error);
-						});
-					});
-			});
-		};
 		this.setState({
 			submitting: true,
 		});
@@ -102,13 +85,23 @@ export default class LoginForm extends React.Component {
 				);
 			})
 			.then((data) => {
-				//console.log("session", data);
-				this.setState({
-					submitting: false,
-				});
+				this.props.updateSessionId(data.session_id);
+				return fetchApi(
+					`${API_URL}/account?api_key=${API_KEY_3}&session_id=${data.session_id}`
+				);
+			})
+			.then((user) => {
+				this.setState(
+					{
+						submitting: false,
+					},
+					() => {
+						this.props.updateUser(user);
+					}
+				);
 			})
 			.catch((error) => {
-				//console.log("error", error);
+				console.log("error", error);
 				this.setState({
 					submitting: false,
 					errors: {
@@ -120,7 +113,6 @@ export default class LoginForm extends React.Component {
 
 	onLogin = (e) => {
 		e.preventDefault();
-
 		const errors = this.validateFields();
 		if (Object.keys(errors).length > 0) {
 			this.setState((prevState) => ({
@@ -134,56 +126,75 @@ export default class LoginForm extends React.Component {
 		}
 	};
 
+	getClassForInput = (key) =>
+		classNames("form-control", {
+			invalid: this.state.errors[key],
+		});
+
 	render() {
 		const { username, password, errors, submitting } = this.state;
-		return (
-			<div className="form-login-container">
-				<form className="form-login">
-					<h1 className="h3 mb-3 font-weight-normal text-center">Login form</h1>
-					<div className="form-group">
-						<label htmlFor="username">Username</label>
-						<input
-							type="text"
-							className="form-control"
-							id="username"
-							placeholder="User name"
-							name="username"
-							value={username}
-							onChange={this.onChange}
-							onBlur={this.handleBlur}
-						/>
-						{errors.username && (
-							<div className="invalid-feedback">{errors.username}</div>
-						)}
-					</div>
-					<div className="form-group">
-						<label htmlFor="password">Password</label>
-						<input
-							type="password"
-							className="form-control"
-							id="password"
-							placeholder="Password"
-							name="password"
-							value={password}
-							onChange={this.onChange}
-						/>
-						{errors.password && (
-							<div className="invalid-feedback">{errors.password}</div>
-						)}
-					</div>
-					<button
-						type="submit"
-						className="btn btn-lg btn-primary btn-block"
-						onClick={this.onLogin}
-						disabled={submitting}
-					>
-						Login
-					</button>
-					{errors.base && (
-						<div className="invalid-feedback text-center">{errors.base}</div>
-					)}
-				</form>
-			</div>
-		);
-	}
+    return (
+      <div className="form-login-container">
+        <form className="form-login">
+          <h1 className="h3 mb-3 font-weight-normal text-center">
+            Authentication
+          </h1>
+          <div className="form-group">
+            <label htmlFor="username">Username</label>
+            <input
+              type="text"
+              className={this.getClassForInput("username")}
+              id="username"
+              placeholder="Username"
+              name="username"
+              value={username}
+              onChange={this.onChange}
+              onBlur={this.handleBlur}
+            />
+            {errors.username && (
+              <div className="invalid-feedback">{errors.username}</div>
+            )}
+          </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              className={this.getClassForInput("password")}
+              id="password"
+              placeholder="Password"
+              name="password"
+              value={password}
+              onChange={this.onChange}
+            />
+            {errors.password && (
+              <div className="invalid-feedback">{errors.password}</div>
+            )}
+          </div>
+          <button
+            type="submit"
+            className="btn btn-lg btn-primary btn-block"
+            onClick={this.onLogin}
+            disabled={submitting}
+          >
+            Login
+          </button>
+          {errors.base && (
+            <div className="invalid-feedback text-center">{errors.base}</div>
+          )}
+        </form>
+      </div>
+    );
+  }
 }
+
+export default props => (
+  <AppContext.Consumer>
+    {({ updateUser, updateSessionId }) => (
+      <LoginForm
+        updateUser={updateUser}
+        updateSessionId={updateSessionId}
+        {...props}
+      />
+    )}
+  </AppContext.Consumer>
+);
